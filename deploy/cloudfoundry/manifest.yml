@@ -1,0 +1,5 @@
+---
+applications:
+- name: sample-app-broker
+  memory: 1G
+  path: ../../sample-app-broker/build/libs/sample-app-broker.jar

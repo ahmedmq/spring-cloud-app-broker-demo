@@ -1,0 +1,34 @@
+spring:
+  cloud:
+    openservicebroker:
+      catalog:
+        services:
+          - id: 3101b971-1044-4816-a7ac-9ded2e028079
+            name: sample
+            description: A sample service
+            bindable: true
+            tags:
+              - sample
+            plans:
+              - id: 2451fa22-df16-4c10-ba6e-1f682d3dcdc9
+                bindable: true
+                name: standard
+                description: A sample plan
+                free: true
+
+    appbroker:
+      services:
+        - service-name: sample
+          plan-name: standard
+          ***REMOVED***:
+            - name: sample-service-app1
+              path: classpath:sample-app-service.jar
+
+      deployer:
+        cloudfoundry:
+          api-host: ***REMOVED***
+          api-port: 443
+          username: ***REMOVED***
+          password: ***REMOVED***
+          default-org: ***REMOVED***
+          default-space: ***REMOVED***

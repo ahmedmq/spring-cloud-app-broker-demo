@@ -1,0 +1,5 @@
+rootProject.name = "spring-cloud-app-broker-demo"
+
+include "sample-app-broker"
+include "sample-app-service"
+
