@@ -4,14 +4,14 @@ This repo contains a step-by-step tutorial on implementing a simple service brok
 
 See Git tags for step-by-step progress of configuring the broker using Spring Cloud App broker. Clone this repository and run the below from the root of the project folder:
 
-```bash
+```text
 $ git tag -ln
 
 v1			Build a simple Service Broker
 v2 			Configure app deployment properties through App Broker configuration
 v3			Configure service instance/binding lifecycle using Workflows
 v4			Configure Parameter Transformer	for backing application deployment
-v5			Persiting Service Instance/Binding State 
+v5			Persisting Service Instance/Binding State 
 v6			Configure custom Target locations for backing applications
 ```
 
@@ -29,7 +29,7 @@ With `spring-cloud-app-broker`, you can declare the details of services, includi
 
 `spring-cloud-app-broker` provides the [AppDeploymentCreateServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentCreateServiceInstanceWorkflow.java) / [AppDeploymentUpdateServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentUpdateServiceInstanceWorkflow.java) /[AppDeploymentDeleteServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentDeleteServiceInstanceWorkflow.java) for managing the deployment of configured backing applications and services.
 
-You can specify default values for all application deployment( using properties under `spring.cloud.appbroker.deployer.cloudfoundry.*`) or override specific deployment ( using properties under `spring.cloud.appbroker.services.*`). App broker also provides interfaces to customize app deployment implementations dynamically.
+You can specify default values for all application deployment( using properties under `spring.cloud.appbroker.deployer.cloudfoundry.*`) or override specific deployment ( using properties under `spring.cloud.appbroker.services.*`). App broker also provides interfaces to customize app deployment implementations dynamically, for instance if we need additional information from the platform during the deployment process.
 
 > Currently, Spring Cloud App Broker supports only Cloud Foundry as a deployment platform.
 
@@ -75,13 +75,13 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
 
 - Run the following command from the root of the project folder to compile the code and run tests
 
-  ```bash
+  ```text
   $ ./gradlew clean build
   ```
 
-- Copy the Spring Boot fat JAR from `sample-app-service` to the `/src/main/resources` folder in `sample-app-broker`
+- Once the build completes successfully, copy the Spring Boot fat JAR from `sample-app-service` to the `/src/main/resources` folder in `sample-app-broker`
 
-  ```bash
+  ```text
   $ cp sample-app-service/build/libs/sample-app-service.jar sample-app-broker/src/main/resources/
   ```
   The app broker configuration provided in `sample-app-broker` deploys the JAR provided in `src/main/resources`
@@ -90,12 +90,12 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
 
 - From the root of the repository use the supplied manifest to deploy the `sample-app-broker` application.
 
-  ```bash
+  ```text
   $ cf push -f deploy/cloudfoundry/manifest.yml
   ```
-  A sample output is shown below where the app is deployed to Cloud Foundy and is started succesfully.
+  A sample output is shown below where the app is deployed to Cloud Foundry and is started successfully.
 
-  ```bash
+  ```text
   name:                sample-app-broker
   requested state:     started
   isolation segment:   iso-01
@@ -125,7 +125,7 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
 
 -   Check the status of the application
 
-    ```bash
+    ```text
     $ cf apps
     ```
 
@@ -142,7 +142,7 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
 
   Use `curl` or any other REST client to access the broker's catalog via the `/v2/catalog` endpoint. This is the same endpoint used to populate the marketplace
 
-  ```bash
+  ```text
   $ curl http://sample-app-broker.cfapps.haas-222.pez.pivotal.io/v2/catalog
   {
     "services": [
@@ -185,7 +185,7 @@ Now that the application has been deployed and verified, it can be registered to
 
     The Open Service Broker API endpoints in the service broker application are secured with a basic auth username and password. Register the service broker using the URL from above and the credentials:
 
-    ```bash
+    ```text
     cf create-service-broker sample-broker admin admin http://sample-app-broker.cfapps.haas-222.pez.pivotal.io
     ```
     Make the service offerings from the service broker visible in the service marketplace
@@ -201,7 +201,7 @@ Now that the application has been deployed and verified, it can be registered to
     ```
     $ cf create-service-broker sample-broker admin admin http://sample-app-broker.cfapps.haas-222.pez.pivotal.io --space-scoped
     ```
-    You should see ouptut similar to:
+    You should see output similar to:
     ```
     Creating service broker sample-broker in org sample / space apps as admin...
     OK
@@ -223,7 +223,7 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 - Use the below command to view the marketplace
 
-  ```bash
+  ```text
   $ cf marketplace
   Getting services from marketplace in org sample / space apps as admin...
   OK
@@ -238,7 +238,7 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 -   Use `cf create-service` to create a service instance
 
-    ```bash
+    ```text
     $ cf create-service sample standard my-sample
     Creating service instance my-sample in org sample / space apps as admin...
     OK
@@ -250,7 +250,7 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 - Use `cf services` to verify if the instance is created
 
-  ```bash
+  ```text
   $ cf services
   Getting services in org sample / space apps as admin...
 
@@ -259,7 +259,7 @@ The new service `sample-service` should be now visible in the marketplace along 
   ```
 
 - Check if the service instance has been deployed
-  ```bash
+  ```text
   $ cf apps
   Getting apps in org sample / space apps as admin...
   OK
@@ -269,7 +269,7 @@ The new service `sample-service` should be now visible in the marketplace along 
   sample-service-app1   started           1/1         1G       1G     sample-service-app1.cfapps.haas-222.pez.pivotal.io
   ```
 
-  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been succesfully created.
+  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created.
 
 ## Step 6 - Service binding
 
@@ -290,7 +290,7 @@ Hello from brokered service...
 ## Step 8 - Delete the service instance
 
 - Delete the service
-  ```bash
+  ```text
   $ cf delete-service my-sample
 
   Really delete the service my-sample?> y
@@ -304,7 +304,7 @@ Hello from brokered service...
 
 - Check the apps
 
-  ```bash
+  ```text
   $ cf apps
   Getting apps in org sample / space apps as admin...
   OK
@@ -319,7 +319,7 @@ After completing the above steps, you can clean up by deleting the service broke
 
 - Delete the service broker:
 
-  ```bash
+  ```text
   $ cf delete-service-broker -f sample-app-broker
   ```
   After confirming the deletion, you should see output similar to:
@@ -333,7 +333,7 @@ After completing the above steps, you can clean up by deleting the service broke
 
 - Delete the app broker application:
 
-  ```bash
+  ```text
   $ cf delete -f sample-app-broker
   ```
 
