@@ -23,12 +23,15 @@ spring:
           apps:
             - name: sample-service-app1
               path: classpath:sample-app-service.jar
+              properties:
+                memory: 2G
+                count: 2
 
       deployer:
         cloudfoundry:
-          api-host: https://api.example.com
+          api-host: https://api.run.haas-222.pez.pivotal.io
           api-port: 443
-          username: user
-          password: secret
-          default-org: sample
+          username: admin
+          password: fRgzFcrIyMQm9eTlrIBF8Vkk9hW0Qg_h
+          default-org: mushtaq
           default-space: apps

@@ -52,6 +52,18 @@ Build a simple service broker application using [Spring Initializr](https://star
 -   Specify the Spring Cloud Open Service Broker configuration( using properties under `spring.cloud.openservicebroker`) and Spring Cloud App Broker configuration(using properties under `spring.cloud.appbroker`)
 -   Specify the details of the Cloud Platform deployment (using properties under `spring.cloud.appbroker.deployer`)
 
+
+### v2: Configure app deployment properties through App Broker configuration
+
+Update the Spring Cloud App Broker configuration(using properties under `spring.cloud.appbroker`):
+
+- Configure the memory requirements for the app instance using the property `spring.cloud.appbroker.services[0].apps.properties.memory`
+- Configure the number of service instances to be deployed using the property `spring.cloud.appbroker.services[0].apps.properties.count`
+
+> The above configuration of `count` will result in two instances of the application to be deployed into CloudFoundry
+
+For a complete list of properties please see [Properties Configuration](https://docs.spring.io/spring-cloud-app-broker/docs/1.1.1.RELEASE/reference/#properties-configuration)
+
 Follow the next section for step-by-step tutorial to deploy the service broker to Cloud Foundry
 
 ## Deploying the Service Broker to Cloud Foundry
@@ -173,7 +185,7 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
     ]
   }
   ```
-  As you can see above the broker exposes a single service called 'sample' which offers a single standard plan.
+  You should see the broker exposing a single service called `sample` which offers a single standard plan.
 
 ## Step 3 - Register the broker
 
@@ -261,15 +273,15 @@ The new service `sample-service` should be now visible in the marketplace along 
 - Check if the service instance has been deployed
   ```text
   $ cf apps
-  Getting apps in org sample / space apps as admin...
+  Getting apps in org mushtaq / space apps as admin...
   OK
 
   name                  requested state   instances   memory   disk   urls
   sample-app-broker     started           1/1         1G       1G     sample-app-broker.cfapps.haas-222.pez.pivotal.io
-  sample-service-app1   started           1/1         1G       1G     sample-service-app1.cfapps.haas-222.pez.pivotal.io
+  sample-service-app1   started           2/2         2G       1G     sample-service-app1.cfapps.haas-222.pez.pivotal.io
   ```
 
-  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created.
+  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created. Also notice the number of instances (2) and the memory (2G) as provided in the configuration
 
 ## Step 6 - Service binding
 
@@ -282,7 +294,7 @@ Using the URI from the `cf apps` output you can access the service instance endp
 
 ```
 # Check the endpoint
-$ curl https://sample-service-app1.cfapps.haas-222.pez.pivotal.io/
+$ curl http://sample-service-app1.cfapps.haas-222.pez.pivotal.io/
 
 Hello from brokered service...
 ```
