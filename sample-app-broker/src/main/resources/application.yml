@@ -26,9 +26,9 @@ spring:
 
       deployer:
         cloudfoundry:
-          api-host: ***REMOVED***
+          api-host: https://api.example.com
           api-port: 443
-          username: ***REMOVED***
-          password: ***REMOVED***
-          default-org: ***REMOVED***
+          username: user
+          password: secret
+          default-org: sample
           default-space: ***REMOVED***
