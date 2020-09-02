@@ -23,12 +23,15 @@ spring:
           ***REMOVED***:
             - name: sample-service-app1
               path: classpath:sample-app-service.jar
+              properties:
+                memory: 2G
+                count: 2
 
       deployer:
         cloudfoundry:
-          api-host: https://api.example.com
+          api-host: ***REMOVED***
           api-port: 443
-          username: user
-          password: secret
-          default-org: sample
+          username: ***REMOVED***
+          password: ***REMOVED***
+          default-org: ***REMOVED***
           default-space: ***REMOVED***
