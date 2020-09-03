@@ -20,18 +20,20 @@ spring:
       services:
         - service-name: sample
           plan-name: standard
-          ***REMOVED***:
+          apps:
             - name: sample-service-app1
               path: classpath:sample-app-service.jar
               properties:
                 memory: 2G
                 count: 2
+                host: sample-service-demo
+                domain: cfapps.haas-222.pez.pivotal.io
 
       deployer:
         cloudfoundry:
-          api-host: ***REMOVED***
+          api-host: https://api.example.io
           api-port: 443
-          username: ***REMOVED***
-          password: ***REMOVED***
-          default-org: ***REMOVED***
-          default-space: ***REMOVED***
+          username: user
+          password: secret
+          default-org: default
+          default-space: default
