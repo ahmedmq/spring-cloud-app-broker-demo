@@ -29,9 +29,9 @@ spring:
 
       deployer:
         cloudfoundry:
-          api-host: https://api.run.haas-222.pez.pivotal.io
+          api-host: https://api.example.io
           api-port: 443
-          username: admin
-          password: fRgzFcrIyMQm9eTlrIBF8Vkk9hW0Qg_h
-          default-org: mushtaq
-          default-space: apps
+          username: user
+          password: secret 
+          default-org: default 
+          default-space: default
