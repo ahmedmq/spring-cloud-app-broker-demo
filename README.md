@@ -2,7 +2,7 @@
 
 This repo contains a step-by-step tutorial on implementing a simple service broker that conforms to the [Open Service Broker API](https://www.openservicebrokerapi.org/) specification and deploys applications and backing services to Cloud Foundry using the [Spring Cloud App Broker](https://spring.io/projects/spring-cloud-app-broker).
 
-See Git tags for step-by-step progress of configuring the broker using Spring Cloud App broker. Clone this repository and run the below from the root of the project folder:
+See Git tags for step-by-step progress of configuring the broker using Spring Cloud App broker. Clone this repository and run the below command from the root of the project folder:
 
 ```text
 $ git tag -ln
@@ -17,36 +17,46 @@ v6			Configure custom Target locations for backing applications
 
 ## Introduction
 
-Previously, in order to build a Spring Boot based service broker application, you would add the [Spring Cloud Open Service Broker](https://spring.io/projects/spring-cloud-open-service-broker) starter to the the project, specify the configuration and implement the required interfaces such as [ServiceInstanceService](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceService.java) and [ServiceInstanceBindingService](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceBindingService.java) interface. Spring Cloud Open Service broker is less opinionated about server broker implementation and leaves many of the decisions to the developer, requiring the developer to implement all of the broker application logic themselves like managing service instances, managing state, backing app deployment etc. A second project [Spring Cloud App Broker](https://spring.io/projects/spring-cloud-app-broker/) is available which is an abstraction on top of Spring Cloud Open Service broker and provides opinionated implementations of the corresponding interfaces and also deploys applications and backing services to a platform, such as Cloud Foundry or Kubernetes.
+Previously, in order to build a Spring Boot based service broker application, you would add the [Spring Cloud Open Service Broker](https://spring.io/projects/spring-cloud-open-service-broker) starter to the the project, specify the configuration and implement the required interfaces such as [`ServiceInstanceService`](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceService.java) and [`ServiceInstanceBindingService`](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceBindingService.java). Spring Cloud Open Service broker is less opinionated about server broker implementation and leaves many of the decisions to the developer, requiring the developer to implement all of the broker application logic themselves like managing service instances, managing state, backing app deployment etc. A second project [Spring Cloud App Broker](https://spring.io/projects/spring-cloud-app-broker/) is available which is an abstraction on top of Spring Cloud Open Service broker and provides opinionated implementations of the corresponding interfaces and also deploys applications and backing services to a platform, such as Cloud Foundry or Kubernetes.
 
 > Spring Cloud App Broker builds on Spring Cloud Open Service broker. You must provide Spring Cloud Open Service Broker configuration in order to use Spring Cloud App Broker.
 
-The following are some features of Spring Cloud App Broker in comparison to the Spring Cloud Open Service Broker
+The following are some features of Spring Cloud App Broker in comparison to the Spring Cloud Open Service Broker:
 
 ### Configure App Deployment
 
 With `spring-cloud-app-broker`, you can declare the details of services, including applications to deploy, application deployment details and their dependent backing services in the App Broker configuration (using properties under `spring.cloud.appbroker.services`). For instance, you can specify the number of service instances to be deployed, the memory and disk resource requirements , etc for specific service instance deployments. App broker will manage the deployment and provision of dependent apps and services and bind those services and apps where appropriate. Conversely when a request is received to delete a service instance, App Broker will unbind and delete dependent services and applications that were previously provisioned
 
-`spring-cloud-app-broker` provides the [AppDeploymentCreateServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentCreateServiceInstanceWorkflow.java) / [AppDeploymentUpdateServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentUpdateServiceInstanceWorkflow.java) /[AppDeploymentDeleteServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentDeleteServiceInstanceWorkflow.java) for managing the deployment of configured backing applications and services.
+`spring-cloud-app-broker` provides the [`AppDeploymentCreateServiceInstanceWorkflow`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentCreateServiceInstanceWorkflow.java) which handles deploying the configured backing applications and services. Similarly there is [`AppDeploymentUpdateServiceInstanceWorkflow`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentUpdateServiceInstanceWorkflow.java) and [`AppDeploymentDeleteServiceInstanceWorkflow`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/workflow/instance/AppDeploymentDeleteServiceInstanceWorkflow.java) for updating and deleting the deployment of configured backing applications and services respectively.
 
-You can specify default values for all application deployment( using properties under `spring.cloud.appbroker.deployer.cloudfoundry.*`) or override specific deployment ( using properties under `spring.cloud.appbroker.services.*`). App broker also provides interfaces to customize app deployment implementations dynamically, for instance if we need additional information from the platform during the deployment process.
+You can specify default values for all application deployment( using properties under `spring.cloud.appbroker.deployer.cloudfoundry.*`) or override specific deployment ( using properties under `spring.cloud.appbroker.services.*`). 
 
 > Currently, Spring Cloud App Broker supports only Cloud Foundry as a deployment platform.
+
+### Workflows
+App broker allows you to create multiple workflows for the various stages of creating, updating and deleting service instances. For instance, app broker authors can implement
+[`CreateServiceInstanceWorkflow`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/service/CreateServiceInstanceWorkflow.java) and configure it as a Spring bean within the application to hook additional functionality into the request to create a service instance. The [`WorkflowServiceInstanceService`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/service/WorkflowServiceInstanceService.java) will then pick up this implementation and execute it as part of the service instance creation process. Multiple workflows can be annotated with `@Order` so as to process the workflows in a specific order.
+
+Similarly workflows can be configured for creating and deleting service instance bindings. 
 
 ### Auto configuration
 
 `spring-cloud-app-broker` provides default implementations of most of the components needed to implement a service broker. In Spring Boot fashion, you can override the default behaviour by providing your own implementation of Spring beans, and `spring-boot-app-broker` will back away from its defaults. This reduces lot of boiler plate code and enables to quickly build your own service broker.
 
-For instance, in service instance provisioning / de-provisioning, `spring-cloud-open-service-broker` required a Spring bean that implements the [ServiceInstanceService](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceService.java) interface. `spring-cloud-app-broker` handles this by providing an implementation in `AppDeploymentCreateServiceInstanceWorkflow`. Additionally service broker authors can implement the [CreateServiceInstanceWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/service/CreateServiceInstanceWorkflow.java) to further modify the deployment.
+For instance, in service instance provisioning / de-provisioning, `spring-cloud-open-service-broker` required a Spring bean that implements the [`ServiceInstanceService`](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceService.java) interface. `spring-cloud-app-broker` handles this by auto configuring an implementation in `AppDeploymentCreateServiceInstanceWorkflow`. 
 
-Similarly, For service instance binding/unbinding, `spring-cloud-open-service-broker` required a Spring bean that implements the [ServiceInstanceBindingService](https://github.com/cloudfoundry-community/spring-boot-cf-service-broker/blob/master/src/main/java/org/cloudfoundry/community/servicebroker/service/ServiceInstanceBindingService.java) interface. Spring Cloud App Broker provides the [CreateServiceInstanceAppBindingWorkflow](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/service/CreateServiceInstanceAppBindingWorkflow.java) to manage the service instance bindings
+Similarly if no implementation is provided for persisting service instance/service binding, then the app broker provides an [`InMemoryServiceInstanceStateRepository`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/state/InMemoryServiceInstanceStateRepository.java) which provides an in memory `Map` to save state and offers an easy getting-started experience. 
+
+> The `InMemoryServiceInstanceStateRepository` is provided for demonstration and testing purpose only. It is not suitable for production grade applications!
+
+There are additional auto configuration performed by App Broker. Please look at [`AppBrokerAutoConfiguration`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-autoconfigure/src/main/java/org/springframework/cloud/appbroker/autoconfigure/AppBrokerAutoConfiguration.java) class for further details.
 
 ## Repository Tags
 The following are the tags to specific commits in the repository that showcase the various features of the Spring Cloud App Broker.
 
 ### v1: Build a simple Service Broker
 
-Build a simple service broker application using [Spring Initializr](https://start.spring.io/) and include the `spring-boot` and `spring-cloud-starter-app-broker-cloudfoundry` dependency
+Build a simple service broker application using [Spring Initializr](https://start.spring.io/) and include the `spring-boot-starter` and `spring-cloud-starter-app-broker-cloudfoundry` dependency
 
 -   Define service broker with Spring Boot externalised configuration supplied by `application.yml`
 -   Specify the Spring Cloud Open Service Broker configuration( using properties under `spring.cloud.openservicebroker`) and Spring Cloud App Broker configuration(using properties under `spring.cloud.appbroker`)
@@ -71,7 +81,11 @@ Before you begin, please be sure you are logged into a Cloud Foundry instance an
 
 This project requires Java 8 at a minimum.
 
-This project is a multi-module Gradle project. The `sample-app-broker` module is a Spring Boot application and contains the code which implements the Spring Cloud App Broker. The `sample-app-service` module is also a Spring Boot application that acts as the service instance which is deployed by the `sample-app-broker`. It has a single endpoint at `/` for test purposes.
+This project is a multi-module Gradle project. 
+
+`sample-app-broker` module is a Spring Boot application and contains the code which implements the Spring Cloud App Broker. 
+
+`sample-app-service` module is a Spring Boot application that acts as the service instance which is deployed by the `sample-app-broker`. It has a single endpoint at '`/`' which returns back a sample string response.
 
 - Run the following command from the root of the project folder to compile the code and run tests
 
@@ -79,12 +93,12 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
   $ ./gradlew clean build
   ```
 
-- Once the build completes successfully, copy the Spring Boot fat JAR from `sample-app-service` to the `/src/main/resources` folder in `sample-app-broker`
+- Once the build completes successfully, copy the Spring Boot fat JAR from `sample-app-service` to the `/src/main/resources` folder within the `sample-app-broker` application
 
   ```text
   $ cp sample-app-service/build/libs/sample-app-service.jar sample-app-broker/src/main/resources/
   ```
-  The app broker configuration provided in `sample-app-broker` deploys the JAR provided in `src/main/resources`
+  The app broker configuration provided in `sample-app-broker` YAML file deploys the JAR provided in `src/main/resources` as a service instance.
 
 ## Step 2 - Deploy the service broker
 
@@ -140,7 +154,7 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
 
 - Accessing the catalog
 
-  Use `curl` or any other REST client to access the broker's catalog via the `/v2/catalog` endpoint. This is the same endpoint used to populate the marketplace
+  Use `curl` or any other REST client to access the `sample-app-broker` catalog via the `/v2/catalog` endpoint. This is the same endpoint used to populate the marketplace. Use the url of the broker application from previous step.
 
   ```text
   $ curl http://sample-app-broker.cfapps.haas-222.pez.pivotal.io/v2/catalog
@@ -173,11 +187,11 @@ This project is a multi-module Gradle project. The `sample-app-broker` module is
     ]
   }
   ```
-  As you can see above the broker exposes a single service called 'sample' which offers a single standard plan.
+  As you can see above the broker exposes a service called 'sample' which offers a single standard plan.
 
 ## Step 3 - Register the broker
 
-Now that the application has been deployed and verified, it can be registered to the Cloud Foundry services marketplace
+Now that the application has been deployed and verified, it can be registered to the Cloud Foundry services marketplace. 
 
 -   With administrator privileges
 
@@ -236,7 +250,7 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 ## Step 5 - Create a service instance
 
--   Use `cf create-service` to create a service instance
+-   Use `cf create-service` to create a service instance:
 
     ```text
     $ cf create-service sample standard my-sample
@@ -246,9 +260,9 @@ The new service `sample-service` should be now visible in the marketplace along 
     Create in progress. Use 'cf services' or 'cf service my-sample' to check operation status.
     ```
 
-    This will take some amount of time and in the background will initiate the deployment of the service instances and backing service if any.
+    This will take some amount of time and in the background will initiate the deployment of the service instance (`sample-app-service`).
 
-- Use `cf services` to verify if the instance is created
+- Use `cf services` to verify if the instance is created:
 
   ```text
   $ cf services
@@ -258,7 +272,7 @@ The new service `sample-service` should be now visible in the marketplace along 
   my-sample   sample    standard                create succeeded   sample-broker
   ```
 
-- Check if the service instance has been deployed
+- Check if the service instance has been deployed:
   ```text
   $ cf apps
   Getting apps in org sample / space apps as admin...
@@ -271,9 +285,9 @@ The new service `sample-service` should be now visible in the marketplace along 
 
   You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created.
 
-## Step 6 - Service binding
+## Step 6 - Create Service binding
 
-Normally you would bind apps to service instances for the purpose of generating credentials and delivering them to apps. In this case, there is no explicit configuration for service binding and we can directly interact with the service instance using a REST client as shown in the next step. 
+Normally you would bind apps to service instances for the purpose of generating credentials and delivering them to apps. In this case, there is no explicit configuration for service binding and we can directly interact with the service instance using a REST client as shown in the next step. As we go further in the tutorial we will create the service binding.
 
 
 ## Step 7 - Access the service instance
@@ -281,15 +295,18 @@ Normally you would bind apps to service instances for the purpose of generating 
 Using the URI from the `cf apps` output you can access the service instance endpoint
 
 ```
-# Check the endpoint
+# Check the service instance endpoint:
 $ curl https://sample-service-app1.cfapps.haas-222.pez.pivotal.io/
 
 Hello from brokered service...
 ```
+Using basic configuration provided in the YAML file of `sample-app-broker` we have successfully deployed a service instance into Cloud Foundry.
 
 ## Step 8 - Delete the service instance
 
-- Delete the service
+We can now begin to clean up the environment after completing the previous step.
+
+- Delete the service:
   ```text
   $ cf delete-service my-sample
 
@@ -300,7 +317,7 @@ Hello from brokered service...
   Delete in progress. Use 'cf services' or 'cf service my-sample' to check operation status.
   ```
 
-  Deleting the service automatically deletes the service instance as well. 
+  This should take some minutes to complete. Deleting the service automatically deletes the service instance as well. 
 
 - Check the apps
 
