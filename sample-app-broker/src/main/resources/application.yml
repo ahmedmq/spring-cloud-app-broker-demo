@@ -27,7 +27,7 @@ spring:
                 memory: 2G
                 count: 2
                 host: sample-service-demo
-                domain: cfapps.haas-222.pez.pivotal.io
+                domain: api.example.io
 
       deployer:
         cloudfoundry:
