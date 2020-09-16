@@ -321,12 +321,11 @@ The new service `sample-service` should be now visible in the marketplace along 
   Getting env variables for app sample-service-app1 in org sample / space apps as admin...
   OK
   ...
-
   User-Provided:
- SPRING_APPLICATION_JSON: {"count":"1","memory":"1G","lang":"en","sample-app.httpclient.connect-timeout":60,"spring.cloud.appbroker.service-instance-id":"ca203ddf-591d-44e4-9e02-56cba3847797"}
+  SPRING_APPLICATION_JSON: {"count":"1","memory":"1G","lang":"en","sample-app.httpclient.connect-timeout":60,"spring.cloud.appbroker.service-instance-id":"ca203ddf-591d-44e4-9e02-56cba3847797"}
   ```
 
-  The environment parameter transformer configuration is applied and the `count`, `memory` `lang` properties are available in the environment. Environment variable `sample-app.httpclient.connect-timeout`is also set by the custom Parameter Transformer implementation.
+  The environment parameter transformer configuration is applied and the `count`, `memory` `lang` properties are available in the environment. Environment variable `sample-app.httpclient.connect-timeout` is also set by the custom Parameter Transformer implementation.
 
 
 
