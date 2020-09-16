@@ -82,6 +82,16 @@ Add workflows to configure perform actions before or after create, update, delet
 - Create `CustomCreateServiceInstanceBindingServiceWorkflow` class by implementing `CreateServiceInstanceAppBindingWorkflow` interface to generate the connection URI of the deployed service instance. Binding the service to an app will add the URI of the deployed instance to `VCAP_SERVICES` environment variable of the app. The URI is generated using the app broker configuration properties `spring.cloud.appbroker.services[0].apps[0].properties.host` and `spring.cloud.appbroker.services[0].apps[0].properties.domain`. These two configuration properties are also used to map routes for the deployed application.
 - Create `ServiceInstanceParametersValidatorWorkflow` by implementing `CreateServiceInstanceWorkflow` interface to validate the parameters before the service instance is created. The class `ServiceInstanceServiceOrder` is used to specify the order of the workflows.
 
+### v4:	Configure Parameter Transformer	for backing application deployment
+
+Update the Spring Cloud App Broker [`Parameters Transformers`](https://docs.spring.io/spring-cloud-app-broker/docs/1.1.1.RELEASE/reference/#service-instance-parameters) configuration(using properties under `spring.cloud.appbroker.services.apps.parameters-transformers`):
+
+- Configure `PropertyMapping` parameter transformer for the service instance using the property `spring.cloud.appbroker.services[0].apps.parameters-transformers.name` and include the `count` and `memory` properties to set deployment properties of the backing application from parameters provided when a service instance is created or updated.
+
+- Configure `EnvironmentMapping` parameter transformer for the app instance using the property `spring.cloud.appbroker.services[0].apps.parameters-transformers.name` and include the `count`,`memory` and `lang` properties to populate environment variables on the backing application from parameters provided when a service instance is created or updated
+
+- Implement a custom `ParameterTransformer` to include business logic to handle user input parameters and make it available to the service instance. Create a `RequestTimeoutParameterTransformer` where we are going to map a parameter from `request-timeout-ms` to an environment variable `sample-app.httpclient.connect-timeout`.
+
 Follow the next section for step-by-step tutorial to deploy the service broker to Cloud Foundry
 
 ## Deploying the Service Broker to Cloud Foundry
@@ -270,10 +280,10 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 ## Step 5 - Create a service instance
 
--   Use `cf create-service` to create a service instance:
+-   Use `cf create-service` to create a service instance and pass additional configuration parameters as configured above in V4 tag:
 
     ```text
-    $ cf create-service sample standard my-sample
+    $ cf create-service sample standard my-sample -c '{"count":1,"memory":"1G","lang":"en","request-timeout-ms":60}'
     Creating service instance my-sample in org sample / space apps as admin...
     OK
 
@@ -284,13 +294,13 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 - Use `cf services` to verify if the instance is created:
 
-  ```text
-  $ cf services
-  Getting services in org sample / space apps as admin...
+    ```text
+    $ cf services
+    Getting services in org sample / space apps as admin...
 
-  name        service   plan       bound apps   last operation       broker          upgrade available
-  my-sample   sample    standard                create succeeded   sample-broker
-  ```
+    name        service   plan       bound apps   last operation       broker          upgrade available
+    my-sample   sample    standard                create succeeded   sample-broker
+    ```
 
 - Check if the service instance has been deployed:
   ```text
@@ -303,7 +313,22 @@ The new service `sample-service` should be now visible in the marketplace along 
   sample-service-app1   started           1/1         1G       1G     sample-service-app1.cfapps.haas-222.pez.pivotal.io
   ```
 
-  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created.
+  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created. Notice the number of instances is 1, and the memory of 1G has been allocated overriding the static configuration provided in the YAML file.
+
+- Check the environment of the service instance
+  ```text
+  $ cf env sample-service-app-1
+  Getting env variables for app sample-service-app1 in org sample / space apps as admin...
+  OK
+  ...
+
+  User-Provided:
+ SPRING_APPLICATION_JSON: {"count":"1","memory":"1G","lang":"en","sample-app.httpclient.connect-timeout":60,"spring.cloud.appbroker.service-instance-id":"ca203ddf-591d-44e4-9e02-56cba3847797"}
+  ```
+
+  The environment parameter transformer configuration is applied and the `count`, `memory` `lang` properties are available in the environment. Environment variable `sample-app.httpclient.connect-timeout`is also set by the custom Parameter Transformer implementation.
+
+
 
 ## Step 6 - Create Service binding
 

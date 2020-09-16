@@ -28,6 +28,14 @@ spring:
                 count: 2
                 host: sample-service-demo
                 domain: api.example.io
+              parameters-transformers:
+                - name: EnvironmentMapping
+                  args:
+                    include: count,memory,lang
+                - name: PropertyMapping
+                  args:
+                    include: count,memory
+                - name: RequestTimeoutParameterTransformer
 
       deployer:
         cloudfoundry:
