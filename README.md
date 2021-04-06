@@ -109,6 +109,14 @@ Update the Spring Cloud App Broker [`Parameters Transformers`](https://docs.spri
 
 > You will need to create a MYSQL database instance in Cloud Foundry prior to using `cf push`. You will need to use the same MYSQL instance name provided in the manifest file when creating the instance using `cf create-service..`. 
 
+### v6: Configure custom Target locations for backing applications
+
+- Specify a new Target for deploying the backing applications
+  
+  - Create a `CustomSpaceTarget` that extends [TargetFactory](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/extensions/targets/TargetFactory.java)
+  - Specify the custom target in the app broker configuration 
+  
+By default, for Cloud Foundry the backing application is deployed to the org named by `spring.cloud.appbroker.deployer.cloudfoundry.default-org` and the space named by `spring.cloud.appbroker.deployer.cloudfoundry.default-space`. However, in the above case the application is deployed to `custom-space` space in Cloud Foundry.
 
 Follow the next section for step-by-step tutorial to deploy the service broker to Cloud Foundry
 
@@ -331,16 +339,16 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 - Check if the service instance has been deployed:
   ```text
+  $ cf target -s my-custom-space
   $ cf apps
-  Getting apps in org sample / space apps as admin...
+  Getting apps in org sample / space my-custom-space as admin...
   OK
 
   name                  requested state   instances   memory   disk   urls
-  sample-app-broker     started           1/1         1G       1G     sample-app-broker.example.io
   sample-service-app1   started           1/1         1G       1G     sample-service-app1.example.io
   ```
 
-  You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created. Notice the number of instances is 1, and the memory of 1G has been allocated overriding the static configuration provided in the YAML file.
+  You should see a new app `sample-service-app1` deployed into the same `my-custom-space` space once the service has been successfully created. Notice the number of instances is 1, and the memory of 1G has been allocated overriding the static configuration provided in the YAML file.
 
 - Check the environment of the service instance
   ```text
@@ -373,8 +381,9 @@ The new service `sample-service` should be now visible in the marketplace along 
 
 Let us know try to bind the service created above. We do not intend to use the service and so for the sake of simplicity let us bind the service to the the `sample-app-broker` app. Ideally, we would have a separate application that will bind to our new service
 
-- Use `cf bind-service` to bind the instance
+- Use `cf bind-service` to bind the instance. Change to the correct cloud foundry space before running the below command:
   ```
+  $ cf target -s apps
   $ cf bind-service sample-app-broker my-sample
   ```
 
@@ -425,10 +434,11 @@ Let us know try to bind the service created above. We do not intend to use the s
 
 ## Step 7 - Access the service instance
 
-- Using the URI from the `cf apps` output you can access the service instance endpoint
+- Using the URI from the `cf apps` output you can access the service instance endpoint. Change to correct space in Cloud Foundry first
 
   ```
   # Check the endpoint
+  $ cf target -s my-custom-space
   $ curl http://sample-service-app1.example.io/
 
   Hello from brokered service...
@@ -438,6 +448,7 @@ Let us know try to bind the service created above. We do not intend to use the s
 
 - Unbind the service instance from the app
   ```
+  $ cf target -s apps
   $ cf unbind-service sample-app-broker my-sample
   Unbinding app sample-app-broker from service my-sample in org sample / space apps as admin...
   OK

@@ -20,6 +20,8 @@ spring:
       services:
         - service-name: sample
           plan-name: standard
+          target:
+            name: CustomSpaceTarget
           apps:
             - name: sample-service-app1
               path: classpath:sample-app-service.jar
