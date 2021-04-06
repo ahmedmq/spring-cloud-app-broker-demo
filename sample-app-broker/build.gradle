@@ -11,9 +11,24 @@ buildscript {
 
 apply plugin: 'org.springframework.boot'
 
+bootJar{
+
+    dependsOn(project(':sample-app-service').tasks.getByName("build"))
+    into('BOOT-INF/classes') {
+        from "${project('::sample-app-service').projectDir}/build/libs"
+    }
+
+}
+
 dependencies {
     implementation "org.springframework.boot:spring-boot-starter-webflux"
     implementation "org.springframework.cloud:spring-cloud-starter-app-broker-cloudfoundry:${springCloudAppBrokerVersion}"
+
+    implementation "org.springframework.boot.experimental:spring-boot-starter-r2dbc:0.1.0.M3"
+    implementation "org.springframework.boot.experimental:spring-boot-starter-data-r2dbc:0.1.0.M3"
+
+    implementation "dev.miku:r2dbc-mysql:0.8.2.RELEASE"
+    implementation "io.r2dbc:r2dbc-h2:0.8.0.RELEASE"
 
     testImplementation "io.projectreactor:reactor-test"
     testImplementation("org.springframework.boot:spring-boot-starter-test") {

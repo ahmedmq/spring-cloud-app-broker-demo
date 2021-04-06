@@ -92,6 +92,24 @@ Update the Spring Cloud App Broker [`Parameters Transformers`](https://docs.spri
 
 - Implement a custom `ParameterTransformer` to include business logic to handle user input parameters and make it available to the service instance. Create a `RequestTimeoutParameterTransformer` where we are going to map a parameter from `request-timeout-ms` to an environment variable `sample-app.httpclient.connect-timeout`.
 
+### v5: Persisting Service Instance/Binding State 
+
+- Persisting Service Instance State
+
+  - Create a model class `ServiceInstance` to store the service instance data.
+  - Create a repository interface definition by using [Spring Data's](https://spring.io/projects/spring-data) `CrudRepository`. In this example we have used the `ReactiveCrudRepository` implementation by using [Spring Data R2DBC](https://spring.io/projects/spring-data-r2dbc) project.
+  - Finally register `Bean` object `DefaultServiceInstanceStateRepository` that implements the [`ServiceInstanceStateRepository`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/state/ServiceInstanceStateRepository.java) to persists the service instance state using the above created repository.
+
+- Persisting Service Instance Binding State
+  - Create a model class `ServiceInstanceBinding` to store the service instance data.
+  - Create a repository interface definition `ServiceInstanceBindingRepository` by using [Spring Data's](https://spring.io/projects/spring-data) `CrudRepository`. In this example we have used the `ReactiveCrudRepository` implementation by using [Spring Data R2DBC](https://spring.io/projects/spring-data-r2dbc) project.
+  - Finally register `Bean` object `DefaultServiceInstanceBindingStateRepository` that implements the [`ServiceInstanceBindingStateRepository`](https://github.com/spring-cloud/spring-cloud-app-broker/blob/master/spring-cloud-app-broker-core/src/main/java/org/springframework/cloud/appbroker/state/ServiceInstanceBindingStateRepository.java) to persists the service instance binding using the above created repository.
+
+- Create required configuration classes for MySQL connection using the [r2dbc-mysql](https://github.com/mirromutth/r2dbc-mysql) library. Parse the Cloud Foundry environment variable `VCAP_SERVICES` to get the connection parameters. The folder 'src/main/resources' includes `schema.sql` which specifies the table definition and is executed during the initialization process. 
+
+> You will need to create a MYSQL database instance in Cloud Foundry prior to using `cf push`. You will need to use the same MYSQL instance name provided in the manifest file when creating the instance using `cf create-service..`. 
+
+
 Follow the next section for step-by-step tutorial to deploy the service broker to Cloud Foundry
 
 ## Deploying the Service Broker to Cloud Foundry
@@ -106,6 +124,11 @@ In order to complete the tutorial, please ensure you have:
 -   A Cloud Foundry account and a space to deploy apps. This can be public hosted Cloud Foundry or a private Cloud Foundry.
 
 Before you begin, please be sure you are logged into a Cloud Foundry instance and targeted to an org and space.
+
+Update the `application.yml` in `src/main/resources` of `sample-app-broker` to specify the connection details for your cloudfoundry instance.
+Also, need to update the `domain` property under `appbroker.services[0].apps.properties` to provide the domain name of your cloud foundry instance.
+
+For the steps below, replace the correct domain of your cloud foundry instance when executing the command. The steps below use `example.io` as a domain.
 
 ## Step 1 - Build the project
 
@@ -122,17 +145,21 @@ This project is a multi-module Gradle project.
   ```text
   $ ./gradlew clean build
   ```
-
-- Once the build completes successfully, copy the Spring Boot fat JAR from `sample-app-service` to the `/src/main/resources` folder within the `sample-app-broker` application
-
-  ```text
-  $ cp sample-app-service/build/libs/sample-app-service.jar sample-app-broker/src/main/resources/
-  ```
-  The app broker configuration provided in `sample-app-broker` YAML file deploys the JAR provided in `src/main/resources` as a service instance.
+The gradle build for `sample-app-broker` configures the `bootJar` task to copies the JAR of `sample-app-service` into its classpath.   The app broker configuration provided in `sample-app-broker` YAML file deploys the `sample-app-service` JAR as a service instance.
 
 ## Step 2 - Deploy the service broker
 
-- From the root of the repository use the supplied manifest to deploy the `sample-app-broker` application.
+- Prior to deploying the broker create a mysql instance to store the service instance and binding state:
+  ```
+  $ cf create-service p.mysql db-small mysql
+
+  Creating service instance mysql in org sample / space apps as admin...
+  OK
+
+  Create in progress. Use 'cf services' or 'cf service mysql' to check operation status.
+  ```
+
+- After the mysql instance is created, from the root of the repository use the supplied manifest to deploy the `sample-app-broker` application.
 
   ```text
   $ cf push -f deploy/cloudfoundry/manifest.yml
@@ -179,7 +206,7 @@ This project is a multi-module Gradle project.
     OK
 
     name                requested state   instances   memory   disk   urls
-    sample-app-broker   started           1/1         1G       1G     sample-app-broker.cfapps.haas-222.pez.pivotal.io
+    sample-app-broker   started           1/1         1G       1G     sample-app-broker.example.io
     ```
 
 - Accessing the catalog
@@ -187,7 +214,7 @@ This project is a multi-module Gradle project.
   Use `curl` or any other REST client to access the `sample-app-broker` catalog via the `/v2/catalog` endpoint. This is the same endpoint used to populate the marketplace. Use the url of the broker application from previous step.
 
   ```text
-  $ curl http://sample-app-broker.cfapps.haas-222.pez.pivotal.io/v2/catalog
+  $ curl http://sample-app-broker.example.io/v2/catalog
   {
     "services": [
       {
@@ -230,7 +257,7 @@ Now that the application has been deployed and verified, it can be registered to
     The Open Service Broker API endpoints in the service broker application are secured with a basic auth username and password. Register the service broker using the URL from above and the credentials:
 
     ```text
-    cf create-service-broker sample-broker admin admin http://sample-app-broker.cfapps.haas-222.pez.pivotal.io
+    cf create-service-broker sample-broker admin admin http://sample-app-broker.example.io
     ```
     Make the service offerings from the service broker visible in the service marketplace
 
@@ -243,7 +270,7 @@ Now that the application has been deployed and verified, it can be registered to
     If you do not have administrator privileges on Cloud Foundry, you can make the service broker available in a single organization and space that you have privileges in:
 
     ```
-    $ cf create-service-broker sample-broker admin admin http://sample-app-broker.cfapps.haas-222.pez.pivotal.io --space-scoped
+    $ cf create-service-broker sample-broker admin admin http://sample-app-broker.example.io --space-scoped
     ```
     You should see output similar to:
     ```
@@ -256,7 +283,7 @@ Now that the application has been deployed and verified, it can be registered to
     Getting service brokers as admin...
 
     name                      url
-    sample-broker             http://sample-app-broker.cfapps.haas-222.pez.pivotal.io
+    sample-broker             http://sample-app-broker.example.io
    ```
 
 ## Step 4 - View Catalog and service plans
@@ -309,15 +336,15 @@ The new service `sample-service` should be now visible in the marketplace along 
   OK
 
   name                  requested state   instances   memory   disk   urls
-  sample-app-broker     started           1/1         1G       1G     sample-app-broker.cfapps.haas-222.pez.pivotal.io
-  sample-service-app1   started           1/1         1G       1G     sample-service-app1.cfapps.haas-222.pez.pivotal.io
+  sample-app-broker     started           1/1         1G       1G     sample-app-broker.example.io
+  sample-service-app1   started           1/1         1G       1G     sample-service-app1.example.io
   ```
 
   You should see a new app `sample-service-app1` deployed into the same org/space once the service has been successfully created. Notice the number of instances is 1, and the memory of 1G has been allocated overriding the static configuration provided in the YAML file.
 
 - Check the environment of the service instance
   ```text
-  $ cf env sample-service-app-1
+  $ cf env sample-service-app1
   Getting env variables for app sample-service-app1 in org sample / space apps as admin...
   OK
   ...
@@ -327,11 +354,24 @@ The new service `sample-service` should be now visible in the marketplace along 
 
   The environment parameter transformer configuration is applied and the `count`, `memory` `lang` properties are available in the environment. Environment variable `sample-app.httpclient.connect-timeout` is also set by the custom Parameter Transformer implementation.
 
+- Verify if the service instance state is stored in the database. You can either use `cf mysql` to remotely `ssh` into the Cloud Foundry mysql instance or follow instructions [here](https://docs.cloudfoundry.org/devguide/deploy-apps/ssh-services.html). Below we have used `cf mysql`
 
+  ```
+  $ cf mysql mysql
+
+  mysql> select * from service_instance;
+  +----+--------------------------------------+-----------------------------------+-----------------+--------------+
+  | id | service_instance_id                  | description                       | operation_state | last_updated |
+  +----+--------------------------------------+-----------------------------------+-----------------+--------------+
+  |  1 | f966780f-2027-435c-b099-2f464937bab0 | create service instance completed | SUCCEEDED       | NULL         |
+  +----+--------------------------------------+-----------------------------------+-----------------+--------------+
+  1 row in set (1.00 sec)
+
+  ```
 
 ## Step 6 - Create Service binding
 
-Let us know try to bind the service created above. We do not intend to use the service and so for the sake of simplicity let us bind the service to the the `sample-app-broker` app.
+Let us know try to bind the service created above. We do not intend to use the service and so for the sake of simplicity let us bind the service to the the `sample-app-broker` app. Ideally, we would have a separate application that will bind to our new service
 
 - Use `cf bind-service` to bind the instance
   ```
@@ -351,7 +391,7 @@ Let us know try to bind the service created above. We do not intend to use the s
     {
       "binding_name": null,
       "credentials": {
-      "uri": "sample-service-demo.cfapps.haas-222.pez.pivotal.io"
+      "uri": "sample-service-demo.example.io"
       },
       "instance_name": "my-sample",
       "label": "sample",
@@ -368,6 +408,20 @@ Let us know try to bind the service created above. We do not intend to use the s
   }
   }
   ```
+- Verify if the service instance binding state is stored in the database. You can either use `cf mysql` to remotely `ssh` into the Cloud Foundry mysql instance or follow instructions [here](https://docs.cloudfoundry.org/devguide/deploy-apps/ssh-services.html). Below we have used `cf mysql`
+
+  ```
+  $ cf mysql mysql
+
+  mysql> select * from service_instance_binding;
+  +----+--------------------------------------+--------------------------------------+-------------------------------------------+-----------------+--------------+
+  | id | service_instance_id                  | binding_id                           | description                               | operation_state | last_updated |
+  +----+--------------------------------------+--------------------------------------+-------------------------------------------+-----------------+--------------+
+  |  1 | f966780f-2027-435c-b099-2f464937bab0 | ae217d8e-a97a-401f-87bd-ff9f1d70c0ea | create service instance binding completed | SUCCEEDED       | NULL         |
+  +----+--------------------------------------+--------------------------------------+-------------------------------------------+-----------------+--------------+
+  1 row in set (0.29 sec)
+
+  ```
 
 ## Step 7 - Access the service instance
 
@@ -375,7 +429,7 @@ Let us know try to bind the service created above. We do not intend to use the s
 
   ```
   # Check the endpoint
-  $ curl http://sample-service-app1.cfapps.haas-222.pez.pivotal.io/
+  $ curl http://sample-service-app1.example.io/
 
   Hello from brokered service...
   ```
@@ -414,7 +468,7 @@ We can now begin to clean up the environment after completing the previous step.
   OK
 
   name                requested state   instances   memory   disk   urls
-  sample-app-broker   started           1/1         1G       1G     sample-app-broker.cfapps.haas-222.pez.pivotal.io
+  sample-app-broker   started           1/1         1G       1G     sample-app-broker.example.io
 
 ## Step 10 - Delete the broker and application
 
@@ -423,7 +477,7 @@ After completing the above steps, you can clean up by deleting the service broke
 - Delete the service broker:
 
   ```text
-  $ cf delete-service-broker -f sample-app-broker
+  $ cf delete-service-broker -f sample-broker
   ```
   After confirming the deletion, you should see output similar to:
 
@@ -438,6 +492,19 @@ After completing the above steps, you can clean up by deleting the service broke
 
   ```text
   $ cf delete -f sample-app-broker
+  ```
+  
+- Delete the mysql instance
+
+  Use the below command to delete the service keys associated with the database:
+
+  ```
+  $ cf delete-service-key mysql cf-mysql
+  ```
+  Finally, delete the mysql instance using: 
+  
+  ```
+  $ cf delete-service mysql
   ```
 
 
